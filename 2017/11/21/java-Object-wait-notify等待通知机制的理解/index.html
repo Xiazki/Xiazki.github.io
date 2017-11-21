@@ -233,7 +233,7 @@
 
     
         <meta property="article:published_time" content="Tue Nov 21 2017 13:21:09 GMT+0800" />
-        <meta property="article:modified_time" content="Tue Nov 21 2017 13:44:50 GMT+0800" />
+        <meta property="article:modified_time" content="Tue Nov 21 2017 13:47:24 GMT+0800" />
     
 
     <!-- The Twitter Card protocol -->
@@ -260,7 +260,7 @@
     "mainEntityOfPage": "http://yoursite.com/2017/11/21/java-Object-wait-notify等待通知机制的理解/index.html",
     "headline": "java Object.wait notify等待通知机制的理解",
     "datePublished": "Tue Nov 21 2017 13:21:09 GMT+0800",
-    "dateModified": "Tue Nov 21 2017 13:44:50 GMT+0800",
+    "dateModified": "Tue Nov 21 2017 13:47:24 GMT+0800",
     "author": {
         "@type": "Person",
         "name": "xiazki",
@@ -337,6 +337,15 @@
 
     <!-- Left aligned menu below button -->
     
+    
+    <button id="post-toc-trigger-btn"
+        class="mdl-button mdl-js-button mdl-button--icon">
+        <i class="material-icons">format_list_numbered</i>
+    </button>
+
+    <ul class="post-toc-wrap mdl-menu mdl-menu--bottom-left mdl-js-menu mdl-js-ripple-effect" for="post-toc-trigger-btn" style="max-height:80vh; overflow-y:scroll;">
+        <ol class="post-toc"><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#注意："><span class="post-toc-number">1.</span> <span class="post-toc-text">注意：</span></a></li></ol></li><li class="post-toc-item post-toc-level-2"><a class="post-toc-link" href="#举个例子"><span class="post-toc-number"></span> <span class="post-toc-text">举个例子</span></a></li><li class="post-toc-item post-toc-level-2"><a class="post-toc-link" href="#Object的wait方法"><span class="post-toc-number"></span> <span class="post-toc-text">Object的wait方法</span></a><ol class="post-toc-child"><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#注意：-1"><span class="post-toc-number">1.</span> <span class="post-toc-text">注意：</span></a></li></ol>
+    </ul>
     
 
 
@@ -486,18 +495,15 @@
                 <div id="post-content" class="mdl-color-text--grey-700 mdl-card__supporting-text fade out">
     
         <p>在java多线程中可以使用object.wait/notify来进行线程之间的通讯 wait会使当前线程进入等待状态，notify会从等待线程中随机解除其等待状态</p>
-<p>###注意：</p>
-<ul>
+<h3 id="注意："><a href="#注意：" class="headerlink" title="注意："></a>注意：</h3><ul>
 <li>使用wait 必须进行try catch</li>
 <li>记住调用wait或者notify方法必须采用当前锁调用，即必须采用synchronized中的对象，wait的本意是暂时释放掉对象锁，让别的需要此对象的代码能够有机会执行。</li>
 </ul>
-<p>##举个例子</p>
-<p>  当线程B访问某个共享资源时，想获取资源的锁对象，发现这个锁已经被线程A拿到了，这个时候，线程B只能被挂起，等待线程A释放锁。<br>  但是拿到锁的线程A在执行的过程中，因为某些条件还不满足，暂时不想继续执行下去，想先等待一下(注意：是已经拿到锁的线程A自己想主动等待的)，希望等到某个条件满足后，继续执行任务。在同步代码块里，线程A必须先释放锁，线程B才有资格获取锁，进入同步代码块，执行代码。等线程B执行完后，线程A需要的条件已经满足，那么这个时候必须有一个通知机制，让线程A从等待状态变成执行状态，继续执行代码。</p>
+<h2 id="举个例子"><a href="#举个例子" class="headerlink" title="举个例子"></a>举个例子</h2><p>  当线程B访问某个共享资源时，想获取资源的锁对象，发现这个锁已经被线程A拿到了，这个时候，线程B只能被挂起，等待线程A释放锁。<br>  但是拿到锁的线程A在执行的过程中，因为某些条件还不满足，暂时不想继续执行下去，想先等待一下(注意：是已经拿到锁的线程A自己想主动等待的)，希望等到某个条件满足后，继续执行任务。在同步代码块里，线程A必须先释放锁，线程B才有资格获取锁，进入同步代码块，执行代码。等线程B执行完后，线程A需要的条件已经满足，那么这个时候必须有一个通知机制，让线程A从等待状态变成执行状态，继续执行代码。</p>
 <p>  所以线程之间要协调沟通，必须有一个等待机制和通知机制，在JAVA里面，对应的就是wait方法和notify方法。</p>
-<p>##Object的wait方法</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">synchronized</span> (obj) &#123;</span><br><span class="line">       <span class="keyword">while</span> (condition does not ok)&#123;</span><br><span class="line">           obj.wait();</span><br><span class="line">	 &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="Object的wait方法"><a href="#Object的wait方法" class="headerlink" title="Object的wait方法"></a>Object的wait方法</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">synchronized</span> (obj) &#123;</span><br><span class="line">       <span class="keyword">while</span> (condition does not ok)&#123;</span><br><span class="line">           obj.wait();</span><br><span class="line">	 &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>  如果想让线程A处于等待状态，可以调用当前对象wait方法。wait方法一旦被调用，也就意味着：线程A已经获得锁了，而且能做的事情都已经做了，现在只能等待了，等待另外的同步操作执行某些代码后，我才回来继续干活。</p>
-<p>###注意：<br>永远不要在循环之外调用wait方法<br>《Effective Java》第二版中文版第69条244页位置对这一点说了一页，我看着一知半解。我能理解的一点是：对于从wait中被notify的进程来说，它在被notify之后还需要重新检查是否符合执行条件，如果不符合，就必须再次被wait，如果符合才能往下执行。所以：wait方法应该使用循环模式来调用。按照上面的生产者和消费者问题来说：错误情况一：如果有两个生产者A和B，一个消费者C。当存储空间满了之后，生产者A和B都被wait，进入等待唤醒队列。当消费者C取走了一个数据后，如果调用了notifyAll（），注意，此处是调用notifyAll（），则生产者线程A和B都将被唤醒，如果此时A和B中的wait不在while循环中而是在if中，则A和B就不会再次判断是否符合执行条件，都将直接执行wait（）之后的程序，那么如果A放入了一个数据至存储空间，则此时存储空间已经满了；但是B还是会继续往存储空间里放数据，错误便产生了。错误情况二：如果有两个生产者A和B，一个消费者C。当存储空间满了之后，生产者A和B都被wait，进入等待唤醒队列。当消费者C取走了一个数据后，如果调用了notify（），则A和B中的一个将被唤醒，假设A被唤醒，则A向存储空间放入了一个数据，至此空间就满了。A执行了notify（）之后，如果唤醒了B，那么B不会再次判断是否符合执行条件，将直接执行wait（）之后的程序，这样就导致向已经满了数据存储区中再次放入数据。错误产生。</p>
+<h3 id="注意：-1"><a href="#注意：-1" class="headerlink" title="注意："></a>注意：</h3><p>永远不要在循环之外调用wait方法<br>《Effective Java》第二版中文版第69条244页位置对这一点说了一页，我看着一知半解。我能理解的一点是：对于从wait中被notify的进程来说，它在被notify之后还需要重新检查是否符合执行条件，如果不符合，就必须再次被wait，如果符合才能往下执行。所以：wait方法应该使用循环模式来调用。按照上面的生产者和消费者问题来说：错误情况一：如果有两个生产者A和B，一个消费者C。当存储空间满了之后，生产者A和B都被wait，进入等待唤醒队列。当消费者C取走了一个数据后，如果调用了notifyAll（），注意，此处是调用notifyAll（），则生产者线程A和B都将被唤醒，如果此时A和B中的wait不在while循环中而是在if中，则A和B就不会再次判断是否符合执行条件，都将直接执行wait（）之后的程序，那么如果A放入了一个数据至存储空间，则此时存储空间已经满了；但是B还是会继续往存储空间里放数据，错误便产生了。错误情况二：如果有两个生产者A和B，一个消费者C。当存储空间满了之后，生产者A和B都被wait，进入等待唤醒队列。当消费者C取走了一个数据后，如果调用了notify（），则A和B中的一个将被唤醒，假设A被唤醒，则A向存储空间放入了一个数据，至此空间就满了。A执行了notify（）之后，如果唤醒了B，那么B不会再次判断是否符合执行条件，将直接执行wait（）之后的程序，这样就导致向已经满了数据存储区中再次放入数据。错误产生。</p>
 
         
     
