@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<search> 
+  
+    
+    <entry>
+      <title><![CDATA[java并发 volatile关键字的理解]]></title>
+      <url>/2017/11/21/java%E5%B9%B6%E5%8F%91-volatile%E5%85%B3%E9%94%AE%E5%AD%97%E7%9A%84%E7%90%86%E8%A7%A3/</url>
+      <content type="html"><![CDATA[<p>在多线程的环境,当一个线程修改了共享变量，另一个线程能读取到这个变量的修改值，变量java 提供了volatile保证了变量的可见性，轻量级的synchronized<br>它实现的原理主要有以下两个方面</p>
+<ul>
+<li>追加的LOCK#指令会使处理器缓存行写回到内存</li>
+<li>一个处理器的缓存写回到内存会使其他处理器的缓存无效</li>
+</ul>
+<h2 id="volatile的应用"><a href="#volatile的应用" class="headerlink" title="volatile的应用"></a>volatile的应用</h2><p>先看一段代码，假如线程1先执行，线程2后执行：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//线程1</span></span><br><span class="line"><span class="keyword">boolean</span> stop = <span class="keyword">false</span>;</span><br><span class="line"><span class="keyword">while</span>(!stop)&#123;</span><br><span class="line">    doSomething();</span><br><span class="line">    &#125;</span><br><span class="line">     </span><br><span class="line">  <span class="comment">//线程2</span></span><br><span class="line">  stop = <span class="keyword">true</span>;</span><br></pre></td></tr></table></figure>
+<p>这段代码是很典型的一段代码，很多人在中断线程时可能都会采用这种标记办法。但是事实上，这段代码会完全运行正确么？即一定会将线程中断么？不一定，也许在大多数时候，这个代码能够把线程中断，但是也有可能会导致无法中断线程（虽然这个可能性很小，但是只要一旦发生这种情况就会造成死循环了）。<br>下面解释一下这段代码为何有可能导致无法中断线程。在前面已经解释过，每个线程在运行过程中都有自己的工作内存，那么线程1在运行的时候，会将stop变量的值拷贝一份放在自己的工作内存当中。<br>那么当线程2更改了stop变量的值之后，但是还没来得及写入主存当中，线程2转去做其他事情了，那么线程1由于不知道线程2对stop变量的更改，因此还会一直循环下去。<br>但是用volatile修饰之后就变得不一样了：</p>
+<ul>
+<li>使用volatile关键字会强制将修改的值立即写入主存；</li>
+<li>使用volatile关键字的话，当线程2进行修改时，会导致线程1的工作内存中缓存变量stop的缓存行无效（反映到硬件层的话，就是CPU的L1或者L2缓存中对应的缓存行无效）；</li>
+<li>由于线程1的工作内存中缓存变量stop的缓存行无效，所以线程1再次读取变量stop的值时会去主存读取。<br>那么在线程2修改stop值时（当然这里包括2个操作，修改线程2工作内存中的值，然后将修改后的值写入内存），会使得线程1的工作内存中缓存变量stop的缓存行无效，然后线程1读取时，发现自己的缓存行无效，它会等待缓存行对应的主存地址被更新之后，然后去对应的主存读取最新的值。<br>那么线程1读取到的就是最新的正确的值<h2 id="注意"><a href="#注意" class="headerlink" title="注意"></a>注意</h2>volatitle保证了共享变量的可见性，但是并没有保证原子性，如果变量额的操作非原子性的，也会线程不安全。</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Test</span> </span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">volatile</span> <span class="keyword">int</span> inc = <span class="number">0</span>;</span><br><span class="line">     </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">increase</span><span class="params">()</span> </span>&#123;</span><br><span class="line">	inc++;</span><br><span class="line">    &#125;</span><br><span class="line">		      </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">	<span class="keyword">final</span> Test test = <span class="keyword">new</span> Test();</span><br><span class="line">	<span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>;i&lt;<span class="number">10</span>;i++)&#123;</span><br><span class="line">		<span class="keyword">new</span> Thread()&#123;</span><br><span class="line">			<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span></span>&#123;</span><br><span class="line">				<span class="keyword">for</span>(<span class="keyword">int</span> j=<span class="number">0</span>;j&lt;<span class="number">1000</span>;j++)</span><br><span class="line">					test.increase();</span><br><span class="line">					&#125;;</span><br><span class="line">			    &#125;.start();</span><br><span class="line">			&#125;</span><br><span class="line">																		     </span><br><span class="line">	<span class="keyword">while</span>(Thread.activeCount()&gt;<span class="number">1</span>)  <span class="comment">//保证前面的线程都执行完	</span></span><br><span class="line">	Thread.yield();</span><br><span class="line">	System.out.println(test.inc);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>由于自增操作是非原子操作，某一时刻，存在两个线程读取同一个有效的inc 此时由于是非原子操作，此时将进行两次++ 但是导致只发生了一次++操作。</p>
+<p>所以volatile保证了变量的可见性但是不能不能保证线程安全</p>
+<p>Java Current包下的原子类通过CAS(Compare and set)完成同步锁的一种乐观锁(更新时判断是否被修改) 来保证对变量的原子操作从而保证了线程安全。<br>如下面代码：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">volatile</span> <span class="keyword">int</span> value;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">int</span> <span class="title">get</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> value;</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">int</span> <span class="title">incrementAndGet</span><span class="params">()</span> </span>&#123;</span><br><span class="line">	<span class="keyword">for</span> (;;) &#123;</span><br><span class="line">		<span class="keyword">int</span> current = get();</span><br><span class="line">		<span class="keyword">int</span> next = current + <span class="number">1</span>;</span><br><span class="line">		<span class="keyword">if</span> (compareAndSet(current, next))</span><br><span class="line">			<span class="keyword">return</span> next;</span><br><span class="line">		&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+]]></content>
+      
+        
+        <tags>
+            
+            <tag> java </tag>
+            
+        </tags>
+        
+    </entry>
+    
+    <entry>
+      <title><![CDATA[java Object.wait notify等待通知机制的理解]]></title>
+      <url>/2017/11/21/java-Object-wait-notify%E7%AD%89%E5%BE%85%E9%80%9A%E7%9F%A5%E6%9C%BA%E5%88%B6%E7%9A%84%E7%90%86%E8%A7%A3/</url>
+      <content type="html"><![CDATA[<p>在java多线程中可以使用object.wait/notify来进行线程之间的通讯 wait会使当前线程进入等待状态，notify会从等待线程中随机解除其等待状态</p>
+<h3 id="注意："><a href="#注意：" class="headerlink" title="注意："></a>注意：</h3><ul>
+<li>使用wait 必须进行try catch</li>
+<li>记住调用wait或者notify方法必须采用当前锁调用，即必须采用synchronized中的对象，wait的本意是暂时释放掉对象锁，让别的需要此对象的代码能够有机会执行。</li>
+</ul>
+<h2 id="举个例子"><a href="#举个例子" class="headerlink" title="举个例子"></a>举个例子</h2><p>  当线程B访问某个共享资源时，想获取资源的锁对象，发现这个锁已经被线程A拿到了，这个时候，线程B只能被挂起，等待线程A释放锁。<br>  但是拿到锁的线程A在执行的过程中，因为某些条件还不满足，暂时不想继续执行下去，想先等待一下(注意：是已经拿到锁的线程A自己想主动等待的)，希望等到某个条件满足后，继续执行任务。在同步代码块里，线程A必须先释放锁，线程B才有资格获取锁，进入同步代码块，执行代码。等线程B执行完后，线程A需要的条件已经满足，那么这个时候必须有一个通知机制，让线程A从等待状态变成执行状态，继续执行代码。</p>
+<p>  所以线程之间要协调沟通，必须有一个等待机制和通知机制，在JAVA里面，对应的就是wait方法和notify方法。</p>
+<h2 id="Object的wait方法"><a href="#Object的wait方法" class="headerlink" title="Object的wait方法"></a>Object的wait方法</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">synchronized</span> (obj) &#123;</span><br><span class="line">       <span class="keyword">while</span> (condition does not ok)&#123;</span><br><span class="line">           obj.wait();</span><br><span class="line">	 &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>  如果想让线程A处于等待状态，可以调用当前对象wait方法。wait方法一旦被调用，也就意味着：线程A已经获得锁了，而且能做的事情都已经做了，现在只能等待了，等待另外的同步操作执行某些代码后，我才回来继续干活。</p>
+<h3 id="注意：-1"><a href="#注意：-1" class="headerlink" title="注意："></a>注意：</h3><p>永远不要在循环之外调用wait方法<br>对于从wait中被notify的进程来说，它在被notify之后还需要重新检查是否符合执行条件，如果不符合，就必须再次被wait，如果符合才能往下执行。所以：wait方法应该使用循环模式来调用。按照上面的生产者和消费者问题来说：错误情况一：如果有两个生产者A和B，一个消费者C。当存储空间满了之后，生产者A和B都被wait，进入等待唤醒队列。当消费者C取走了一个数据后，如果调用了notifyAll（），注意，此处是调用notifyAll（），则生产者线程A和B都将被唤醒，如果此时A和B中的wait不在while循环中而是在if中，则A和B就不会再次判断是否符合执行条件，都将直接执行wait（）之后的程序，那么如果A放入了一个数据至存储空间，则此时存储空间已经满了；但是B还是会继续往存储空间里放数据，错误便产生了。错误情况二：如果有两个生产者A和B，一个消费者C。当存储空间满了之后，生产者A和B都被wait，进入等待唤醒队列。当消费者C取走了一个数据后，如果调用了notify（），则A和B中的一个将被唤醒，假设A被唤醒，则A向存储空间放入了一个数据，至此空间就满了。A执行了notify（）之后，如果唤醒了B，那么B不会再次判断是否符合执行条件，将直接执行wait（）之后的程序，这样就导致向已经满了数据存储区中再次放入数据。错误产生。</p>
+]]></content>
+      
+        
+        <tags>
+            
+            <tag> java </tag>
+            
+        </tags>
+        
+    </entry>
+    
+  
+  
+    
+  
+</search>
